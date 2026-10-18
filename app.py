@@ -89,7 +89,7 @@ elif menu == "Model Prediction":
                     # Extract seasonal features matching our trained 13-dimensional schema
                     dt_date = pd.to_datetime(date_val)
                     year = dt_date.year
-                    month_num = dt_date.month
+                    month = dt_date.month
                     quarter = (month - 1) // 3 + 1
                     month_sin = np.sin(2 * np.pi * month_num / 12)
                     month_cos = np.cos(2 * np.pi * month_num / 12)
@@ -107,7 +107,7 @@ elif menu == "Model Prediction":
                         'priceflag': priceflag,
                         'pricetype': pricetype,
                         'year': year,
-                        'month':month_num,
+                        'month':month,
                         'quarter':quarter,
                         'month_sin': month_sin,
                         'month_cos': month_cos
