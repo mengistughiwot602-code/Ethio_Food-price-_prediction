@@ -7,7 +7,7 @@ import plotly.express as px
 # Configure Page Settings
 st.set_page_config(
     page_title="Ethiopia Food Price Prediction & Analytics",
-    page_icon="📈",
+    page_icon="🌾",
     layout="wide"
 )
 
@@ -20,14 +20,14 @@ def load_model_assets():
         return None, str(e)
 
 # App Title
-st.title("📈 Ethiopia Food Price Prediction & Market Analysis")
+st.title("🌾Ethiopia Food Price Prediction & Market Analysis")
 st.markdown("An interactive decision-support application built for localized market forecasting.")
 
 # Navigation Sidebar
 menu = st.sidebar.radio("Navigation", ["Dashboard Overview", "Model Prediction"])
 
 if menu == "Dashboard Overview":
-    st.header("📈 Market Insights & Historical Data Visualizations")
+    st.header("📊 Market Insights & Historical Data Visualizations")
 
     col1, col2, col3 = st.columns(3)
     with col1:
@@ -56,7 +56,7 @@ if menu == "Dashboard Overview":
     st.plotly_chart(fig, use_container_width=True)
 
 elif menu == "Model Prediction":
-    st.header("📈 Real-Time Market Price Inference")
+    st.header("🔮 Real-Time Market Price Inference")
     st.markdown("Enter the market metrics below to predict food prices.")
 
     with st.form("prediction_form"):
@@ -122,6 +122,6 @@ elif menu == "Model Prediction":
                     input_row = input_row[expected_cols]
 
                     prediction = model.predict(input_row)[0]
-                    st.success(f"📈 Predicted Local Market Price: **{prediction:,.2f} ETB**")
+                    st.success(f"🎯 Predicted Local Market Price: **{prediction:,.2f} ETB**")
                 except Exception as ex:
                     st.error(f"Error processing prediction parameters: {ex}")
