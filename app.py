@@ -11,19 +11,13 @@ st.set_page_config(
     layout="wide"
 )
 
-# Load preprocessed pipeline and model
-@st.cache_resource
-def load_assets():
-    pipeline = joblib.load('preprocessing_pipeline.joblib')
-    model = joblib.load('random_forest_model.joblib')
-    return pipeline, model
-
-try:
-    pipeline, model = load_assets()
-    assets_loaded = True
-except Exception as e:
-    assets_loaded = False
-    st.error(f"Error loading serialized model assets: {e}")
+# Safely load serialized model assets
+def load_model_assets():
+    try:
+        model = joblib.load('random_forest_model.joblib')
+        return model, None
+    except Exception as e:
+        return None, str(e)
 
 # App Title
 st.title("🌾 Ethiopia Food Price Prediction & Market Analysis")
@@ -63,51 +57,60 @@ if menu == "Dashboard Overview":
 
 elif menu == "Model Prediction":
     st.header("🔮 Real-Time Market Price Inference")
+    st.markdown("Enter the market metrics below to predict food prices.")
 
-    if not assets_loaded:
-        st.warning("Deployment models could not be verified. Please ensure the pipeline and model are loaded into the server environment.")
-    else:
-        with st.form("prediction_form"):
-            st.subheader("Specify Market Parameters")
+    with st.form("prediction_form"):
+        col_a, col_b = st.columns(2)
+        with col_a:
+            date_val = st.date_input("Transaction Date", value=pd.to_datetime("2022-12-15"))
+            latitude = st.number_input("Latitude Coordinate", value=9.02, format="%.4f")
+            longitude = st.number_input("Longitude Coordinate", value=38.75, format="%.4f")
+            admin1 = st.selectbox("Region (admin1)", [7, 8, 2, 10, 5, 6, 1, 11]) # Integer mapping matches our clean encoders
+            admin2 = st.number_input("Zone (admin2) Encoded ID", value=13, step=1)
 
-            col_a, col_b = st.columns(2)
-            with col_a:
-                date_val = st.date_input("Transaction Date", value=pd.to_datetime("2022-12-15"))
-                latitude = st.number_input("Latitude Coordinate", value=9.02, format="%.4f")
-                longitude = st.number_input("Longitude Coordinate", value=38.75, format="%.4f")
-                admin1 = st.selectbox("Region (admin1)", ['Addis Ababa', 'Oromia', 'Amhara', 'Tigray', 'SNNPR', 'Somali', 'Dire Dawa', 'Harari'])
-                admin2 = st.text_input("Zone (admin2)", value="AA ZONE1")
+        with col_b:
+            market = st.number_input("Local Market Encoded ID", value=103, step=1)
+            category = st.selectbox("Category Encoded ID", [0, 1, 2, 3])
+            commodity = st.number_input("Commodity Encoded ID", value=83, step=1)
+            unit = st.selectbox("Unit Encoded ID", [0, 1, 2, 3])
+            priceflag = st.selectbox("Price Status Encoded ID", [0, 1])
+            pricetype = st.selectbox("Price Type Encoded ID", [0, 1])
 
-            with col_b:
-                market = st.text_input("Local Market Name", value="Addis Ababa")
-                category = st.selectbox("Category", ['cereals and tubers', 'meat, fish and eggs', 'oil and fats', 'non-food'])
-                commodity = st.text_input("Commodity", value="Maize (white)")
-                unit = st.selectbox("Unit", ['100 KG', 'KG', 'L', 'Head', 'Day'])
-                priceflag = st.selectbox("Price Status", ['actual', 'forecast'])
-                pricetype = st.selectbox("Price Type", ['Wholesale', 'Retail'])
+        submit = st.form_submit_button("Predict Market Price")
 
-            submit = st.form_submit_button("Predict Market Price")
+        if submit:
+            # Try loading the assets on submit
+            model, error_msg = load_model_assets()
 
-            if submit:
-                # Structuring the user input to match the fitted X schema
-                input_row = pd.DataFrame([{
-                    'date': pd.to_datetime(date_val),
-                    'admin1': admin1,
-                    'admin2': admin2,
-                    'market': market,
-                    'latitude': latitude,
-                    'longitude': longitude,
-                    'category': category,
-                    'commodity': commodity,
-                    'unit': unit,
-                    'priceflag': priceflag,
-                    'pricetype': pricetype
-                }])
-
+            if error_msg:
+                st.error(f"Could not process prediction. Serialized assets error: {error_msg}")
+            else:
                 try:
-                    preprocessed_inputs = pipeline.transform(input_row)
-                    prediction = model.predict(preprocessed_inputs)[0]
+                    # Extract seasonal features matching our trained 13-dimensional schema
+                    dt_date = pd.to_datetime(date_val)
+                    year = dt_date.year
+                    month_num = dt_date.month
+                    month_sin = np.sin(2 * np.pi * month_num / 12)
+                    month_cos = np.cos(2 * np.pi * month_num / 12)
 
+                    # Build the feature matrix input (13 columns, matching X_train_rf_f)
+                    input_row = pd.DataFrame([{
+                        'admin1': admin1,
+                        'admin2': admin2,
+                        'market': market,
+                        'latitude': latitude,
+                        'longitude': longitude,
+                        'category': category,
+                        'commodity': commodity,
+                        'unit': unit,
+                        'priceflag': priceflag,
+                        'pricetype': pricetype,
+                        'year': year,
+                        'month_sin': month_sin,
+                        'month_cos': month_cos
+                    }])
+
+                    prediction = model.predict(input_row)[0]
                     st.success(f"🎯 Predicted Local Market Price: **{prediction:,.2f} ETB**")
                 except Exception as ex:
                     st.error(f"Error processing prediction parameters: {ex}")
