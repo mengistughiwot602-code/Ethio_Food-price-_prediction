@@ -107,7 +107,6 @@ elif menu == "Model Prediction":
                         'pricetype': pricetype,
                         'year': year,
                         'month':month_num,
-                        'quarter':quarter,
                         'month_sin': month_sin,
                         'month_cos': month_cos
                     }])
