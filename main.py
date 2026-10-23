@@ -38,7 +38,7 @@ if menu == "Dashboard Overview":
         st.metric(label="Unique Commodities Modeled", value="93")
 
     st.subheader("Historical Price Distributions")
-    st.write("The boxplot below reflects regional price variances with spatial and local outliers adjusted.")
+    st.write("The boxplot below reflects regional price variance with spatial and local outliers adjusted.")
 
     # Dummy data structure to support visual representations in the interface
     sample_viz_data = pd.DataFrame({
